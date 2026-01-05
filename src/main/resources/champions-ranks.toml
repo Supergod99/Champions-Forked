@@ -2,7 +2,7 @@
   tier = 0
   numAffixes = 0
   defaultColor = "#FFFFFF"
-  weight = 9500
+  weight = 0
   growthFactor = 1
   effects = []
   presetAffixes = []

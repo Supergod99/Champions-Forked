@@ -55,22 +55,21 @@ public class ModEventHandler {
 
 		if (evt.getConfig().getType() == ModConfig.Type.SERVER) {
 			synchronized (this) {
-
-				IConfigSpec<?> spec = evt.getConfig().getSpec();
-				CommentedConfig commentedConfig = evt.getConfig().getConfigData();
-				// 重建管理器
-				try {
-					if (spec == ChampionsConfig.SERVER_SPEC) {
-						ChampionsConfig.buildServer();
-					} else if (spec == ChampionsConfig.RANKS_SPEC) {
-						ChampionsConfig.transformRanks(commentedConfig);
-						RankManager.buildRanks();
-					} else if (spec == ChampionsConfig.ENTITIES_SPEC) {
-						ChampionsConfig.transformEntities(commentedConfig);
-						EntityManager.buildEntitySettings();
-					} else if (spec == ChampionsConfig.STAGE_SPEC && Utils.isGameStagesLoaded()) {
-						ChampionsConfig.buildStageConfig();
-					}
+			IConfigSpec<?> spec = evt.getConfig().getSpec();
+			CommentedConfig commentedConfig = evt.getConfig().getConfigData();
+			// 重建管理器
+			try {
+				if (spec == ChampionsConfig.SERVER_SPEC) {
+					ChampionsConfig.buildServer();
+				} else if (spec == ChampionsConfig.RANKS_SPEC) {
+					ChampionsConfig.transformRanks(commentedConfig);
+					RankManager.buildRanks();
+				} else if (spec == ChampionsConfig.ENTITIES_SPEC) {
+					ChampionsConfig.transformEntities(commentedConfig);
+					EntityManager.buildEntitySettings();
+				} else if (spec == ChampionsConfig.STAGE_SPEC && Utils.isGameStagesLoaded()) {
+					ChampionsConfig.buildStageConfig();
+				}
 				} catch (Exception e) {
 					Champions.LOGGER.error("Error loading config, please remove this file or check the format is correct: {}", FMLPaths.GAMEDIR.get().resolve(evt.getConfig().getFullPath()), e);
 				}

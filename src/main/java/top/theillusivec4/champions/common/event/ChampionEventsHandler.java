@@ -291,7 +291,7 @@ public class ChampionEventsHandler {
 		BlockEntity blockEntity = evt.getObject();
 
 		if (blockEntity instanceof BeaconBlockEntity) {
-			ChampionHelper.addBeacon(blockEntity.getBlockPos());
+			ChampionHelper.addBeacon(blockEntity.getLevel(), blockEntity.getBlockPos());
 		}
 	}
 

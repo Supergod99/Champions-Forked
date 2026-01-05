@@ -1,7 +1,10 @@
 package top.theillusivec4.champions.common.util;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.Entity;
@@ -12,6 +15,7 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BeaconBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.registries.ForgeRegistries;
 import top.theillusivec4.champions.api.IChampion;
 import top.theillusivec4.champions.common.capability.ChampionCapability;
@@ -20,15 +24,17 @@ import top.theillusivec4.champions.common.config.ConfigEnums.Permission;
 import top.theillusivec4.champions.common.rank.Rank;
 import top.theillusivec4.champions.common.registry.ModEntityTypes;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static top.theillusivec4.champions.common.integration.gamestages.GameStagesPlugin.hasEntityStage;
 
 public class ChampionHelper {
 
-	private static final Set<BlockPos> BEACON_POS = new HashSet<>();
+	private static final Map<ResourceKey<Level>, Set<BlockPos>> BEACON_POS = new HashMap<>();
 
 	private static MinecraftServer server = null;
 
@@ -100,10 +106,10 @@ public class ChampionHelper {
 				nearActiveBeacon(livingEntity);
 	}
 
-	public static void addBeacon(BlockPos pos) {
+	public static void addBeacon(Level level, BlockPos pos) {
 
-		if (server != null) {
-			BEACON_POS.add(pos);
+		if (server != null && level != null && !level.isClientSide()) {
+			BEACON_POS.computeIfAbsent(level.dimension(), key -> new HashSet<>()).add(pos.immutable());
 		}
 	}
 
@@ -148,30 +154,46 @@ public class ChampionHelper {
 		if (range <= 0) {
 			return false;
 		}
+
+		Level level = livingEntity.level();
+		if (!(level instanceof ServerLevel serverLevel)) {
+			return false;
+		}
+		Set<BlockPos> beaconPos = BEACON_POS.get(serverLevel.dimension());
+		if (beaconPos == null || beaconPos.isEmpty()) {
+			return false;
+		}
+
 		Set<BlockPos> toRemove = new HashSet<>();
+		double rangeSq = (double) range * range;
 
-		for (BlockPos pos : BEACON_POS) {
-			Level level = livingEntity.level();
-
-			if (!level.isLoaded(pos)) {
+		for (BlockPos pos : beaconPos) {
+			if (livingEntity.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) > rangeSq) {
 				continue;
 			}
-			BlockEntity blockEntity = level.getBlockEntity(pos);
-
+			LevelChunk chunk = serverLevel.getChunkSource().getChunkNow(
+					SectionPos.blockToSectionCoord(pos.getX()),
+					SectionPos.blockToSectionCoord(pos.getZ())
+			);
+			if (chunk == null) {
+				continue;
+			}
+			BlockEntity blockEntity = chunk.getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
 			if (blockEntity instanceof BeaconBlockEntity beaconBlockEntity && !blockEntity.isRemoved()) {
-
-				if (livingEntity.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) <= range * range) {
-
-					if (beaconBlockEntity.levels > 0) {
-						return true;
-					}
+				if (beaconBlockEntity.levels > 0) {
+					return true;
 				}
-
 			} else {
 				toRemove.add(pos);
 			}
 		}
-		BEACON_POS.removeAll(toRemove);
+		if (!toRemove.isEmpty()) {
+			beaconPos.removeAll(toRemove);
+			if (beaconPos.isEmpty()) {
+				BEACON_POS.remove(serverLevel.dimension());
+			}
+		}
+
 		return false;
 	}
 
