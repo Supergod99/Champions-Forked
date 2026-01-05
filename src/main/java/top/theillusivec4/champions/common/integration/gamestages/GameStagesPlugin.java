@@ -127,9 +127,13 @@ public class GameStagesPlugin {
         if (stages.isEmpty()) {
             return true;
         } else if (living.level() instanceof ServerLevel serverLevel) {
-            return !serverLevel.getPlayers(
-                            player -> GameStageHelper.hasAllOf(player, stages) && player.distanceTo(living) <= 256)
-                    .isEmpty();
+            double rangeSq = 256.0 * 256.0;
+            for (var player : serverLevel.players()) {
+                if (player.distanceToSqr(living) <= rangeSq && GameStageHelper.hasAllOf(player, stages)) {
+                    return true;
+                }
+            }
+            return false;
         }
         return false;
     }

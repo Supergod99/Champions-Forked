@@ -4,7 +4,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import top.theillusivec4.champions.api.IChampion;
 import top.theillusivec4.champions.api.data.AffixSetting;
@@ -48,20 +47,15 @@ public class PlaguedAffix extends CombatLifeCycleAffix {
 	public void onServerUpdate(IChampion champion) {
 		LivingEntity livingEntity = champion.getLivingEntity();
 
-		if (livingEntity.tickCount % 10 == 0) {
-			List<Entity> list = livingEntity.level().getEntities(livingEntity,
+		if ((livingEntity.tickCount + livingEntity.getId()) % 10 == 0) {
+			List<LivingEntity> list = livingEntity.level().getEntitiesOfClass(
+					LivingEntity.class,
 					livingEntity.getBoundingBox().inflate(ChampionsConfig.plaguedRange),
-					entity -> entity instanceof LivingEntity && BasicAffix
-							.canTarget(livingEntity, (LivingEntity) entity, true));
-			list.forEach(entity -> {
-
-				if (entity instanceof LivingEntity) {
-					((LivingEntity) entity).addEffect(
-							new MobEffectInstance(ChampionsConfig.plaguedEffect.getEffect(),
-									ChampionsConfig.plaguedEffect.getDuration(),
-									ChampionsConfig.plaguedEffect.getAmplifier()));
-				}
-			});
+					entity -> entity != livingEntity && BasicAffix.canTarget(livingEntity, entity, true));
+			list.forEach(entity -> entity.addEffect(
+					new MobEffectInstance(ChampionsConfig.plaguedEffect.getEffect(),
+							ChampionsConfig.plaguedEffect.getDuration(),
+							ChampionsConfig.plaguedEffect.getAmplifier())));
 			livingEntity.removeEffect(ChampionsConfig.plaguedEffect.getEffect());
 		}
 	}
