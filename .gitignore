@@ -28,3 +28,15 @@ run
 /runs/
 /src/generated/
 /run-data/
+
+# local logs / crash reports
+*.log
+*.log.txt
+crash*.txt
+latest.log*
+crash.txt
+
+# intake artifacts
+intake_*.zip
+INTAKE.md
+make_intake_zip.py
